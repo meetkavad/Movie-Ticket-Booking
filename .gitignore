@@ -1,0 +1,35 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django-related files
+*.log
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+.env
+
+# Django migrations
+*/migrations/*  
+!*/migrations/__init__.py  # Keep init files
+
+# Virtual environments
+venv/
+env/
+*.venv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# MacOS & Windows system files
+.DS_Store
+Thumbs.db
+
+# Python dependency files
+pip-log.txt
+pip-delete-this-directory.txt
