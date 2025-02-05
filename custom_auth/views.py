@@ -5,9 +5,12 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import AuthModel
 from rest_framework_simplejwt.tokens import RefreshToken
+from .serializer import AuthModelSerializer
 import random
 import os
 from dotenv import load_dotenv
+from django.http import JsonResponse
+from .utils import extract_user
 
 load_dotenv()
 
@@ -22,11 +25,18 @@ def signup(request):
     name = request.data['name']
     email = request.data['email']
     password = request.data['password']
-
-    # encrypt password:
+    
+    # checking if user alreay exists
+    try:
+        user = AuthModel.objects.get(email=email)
+        return Response({'success': False, 'message': 'User already exists!'})
+    except AuthModel.DoesNotExist:
+    # Proceed with user creation or other logic
+        pass
+        
+    # encrypt password:     
     password = make_password(password)
     auth_model = AuthModel(name=name, email=email, password=password)
-    auth_model.save()
 
     # Generate Code
     code = generateCode()
@@ -43,19 +53,29 @@ def signup(request):
     # encrypt code
     code = make_password(str(code))
     auth_model.code = code
+    
+    auth_model.save()
 
     # Generate token
     refresh = RefreshToken.for_user(auth_model)
     access_token = str(refresh.access_token)
-
+    
+    serialized = AuthModelSerializer(auth_model).data
+    
     return Response({
         'success': True,
-        'message': 'Email sent successfully!',
-        'user': auth_model,
+        'message': 'User created successfully!',
+        'user': serialized,
         'access_token': access_token,
         'refresh_token': str(refresh)
     })
 
+@api_view(['POST'])
+def VerifyEmail(request):
+    user = extract_user(request)
+    
+    print(user)
+    return JsonResponse({'message': 'User verified successfully!'})
 
 # @api_view(['POST'])
 # def emailVerify()
@@ -75,25 +95,30 @@ def login(request):
         # Generate token
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
+        
+        serialized = AuthModelSerializer(user).data
         return Response({
             'success': True,
             'message': 'Login successful!',
-            'user': user,
+            'user': serialized,
             'access_token': access_token,
             'refresh_token': str(refresh)
         })
     else:
         return Response({'success': False, 'message': 'Invalid password!'})
 
-@api_view(['GET'])
-
-
-
 @api_view(['PATCH'])
 def updateUser(request):
-    name = request.data['name']
-    password = request.data['password']
-    image = request.data['image']
+    id = request.data['id']
+    if 'name' not in request.data and 'password' not in request.data and 'image' not in request.data:
+        return Response({'success': False, 'message': 'No data to update!'})
+    
+    if 'name' in request.data:
+        name = request.data['name']
+    if 'password' in request.data:
+        password = request.data['password']
+    if 'image' in request.data:
+        image = request.data['image']
     image_base64 = base64.b64encode(image.read()).decode('utf-8')
     image.seek(0)
 
@@ -109,7 +134,11 @@ def updateUser(request):
     if image:
         user.image_base64 = image_base64
 
-    return Response({'success': True, 'message': 'User updated successfully!'})
+    user.save()
+    
+    serialized = AuthModelSerializer(user).data
+    
+    return Response({'success': True, 'message': 'User updated successfully!', 'user': serialized})
 
 @api_view(['DELETE'])   
 def deleteUser(request):
