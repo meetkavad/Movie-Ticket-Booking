@@ -5,5 +5,5 @@ from rest_framework import serializers
 class AuthModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuthModel
-        fields = ['id', 'name', 'email', 'password', 'code']
+        fields = ['id', 'name', 'email', 'password', 'code', 'image_base64']
     
